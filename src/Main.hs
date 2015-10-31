@@ -6,8 +6,12 @@ import Prelude hiding (FilePath)
 import qualified Filesystem.Path.CurrentOS as Path
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
+import qualified Data.Attoparsec.Text as PT
 
 import Control.Conditional (unlessM)
+import Data.Hourglass.Types (Date(..))
+import Control.Applicative
+import Data.Char (isSpace)
 
 import Turtle
 import Turtle.Format
@@ -17,6 +21,20 @@ data Options = Options { dest :: FilePath
                        , name :: Text
                        } deriving Show
 
+data BackupList = BackupList { backupTag :: Text
+                             , backupTime :: Date
+                             }
+
+backupListParser :: PT.Parser (Text, Text)
+backupListParser = do
+  name <- PT.takeTill isSpace
+  PT.skipSpace
+  date <- PT.takeTill PT.isEndOfLine
+  return (name, date)
+
+getAtticRepo :: Options -> FilePath
+getAtticRepo opts = dest opts </> fromText (name opts <> ".attic")
+
 optionsParser :: Parser Options
 optionsParser = Options <$> optPath "dest" 'd' "Destination (has to equal mount point in my case)"
                         <*> optPath "src" 's' "Source directory"
@@ -25,13 +43,20 @@ optionsParser = Options <$> optPath "dest" 'd' "Destination (has to equal mount 
 main :: IO ()
 main = do
   opts <- options "Attic Schedule" optionsParser
+  let repo = getAtticRepo opts
 
   unlessM (isPathMounted $ dest opts) $ do
     echo $ format ("Doesn't seem like "%s%" is mounted. Let me do that for you …") (tshow $ dest opts)
     void $ mount $ dest opts
 
+  backupList <- obtainBackupList repo
+  echo "yo"
+
 mount :: FilePath -> IO ExitCode
-mount path = let Right tpath = Path.toText path in proc "mount" [tpath] empty
+mount path = let Right tpath = Path.toText path in proc "sudo" ["mount", tpath] empty
+
+obtainBackupList :: FilePath -> IO BackupList
+obtainBackupList = undefined
 
 -- | Not really reliable way to check if something is possibly mounted.
 --   If the given path is a sub-path of a mounted item, it will return a

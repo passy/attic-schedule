@@ -21,3 +21,5 @@ executable attic-schedule
                      , text
                      , system-filepath
                      , cond
+                     , hourglass
+                     , attoparsec
