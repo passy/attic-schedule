@@ -34,3 +34,7 @@ attic-schedule -- -d /mnt/remotebackup -s ~/Documents/ -n documents
 This will create a new tag with the name
 `/mnt/remotebackup/pascal-documents.attic::2015-11-01-21h` unless there's another
 backup created on the 11th of November 2015.
+
+## License
+
+BSD-3
