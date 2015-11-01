@@ -64,7 +64,32 @@ main = do
 
   backupList <- obtainBackupList repo
   let lastBackup = findLastBackup <$> backupList
-  echo $ tshow lastBackup
+  let minimumDiff = -1 * 24 * 60 * 60 :: NominalDiffTime
+  yesterday <- addUTCTime minimumDiff <$> getCurrentTime
+  -- TODO: Check if the logic here is actually right. It might be an any that
+  -- I need here.
+  let shouldBackup = all (backupOlderThan yesterday) lastBackup
+
+  if shouldBackup then do
+    echo "Last backup is older than 24h, let's do it!"
+    view $ doBackup (src opts) repo
+  else
+    echo "Old backup isn't even a day old. I'll skip it for now."
+
+doBackup :: FilePath -> FilePath -> Shell ExitCode
+doBackup src repo = do
+  now <- liftIO getCurrentTime
+  let Right trepo = Path.toText repo
+  let Right tsrc = Path.toText src
+  let dayStr = tshow . utctDay $ now
+  let hourStr = tshow . todHour . timeToTimeOfDay . utctDayTime $ now
+  let target = trepo <> "::" <> dayStr <> ":" <> hourStr
+
+  echo $ format ("Creating new backup with target target"%s) target
+  proc "attic" ["create", target, tsrc, "-v", "--stats"] empty
+
+backupOlderThan :: UTCTime -> BackupList -> Bool
+backupOlderThan time backup = diffUTCTime time (backupTime backup) < 0
 
 mount :: FilePath -> IO ExitCode
 mount path = let Right tpath = Path.toText path in proc "sudo" ["mount", tpath] empty
