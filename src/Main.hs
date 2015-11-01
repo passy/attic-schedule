@@ -7,11 +7,15 @@ import qualified Filesystem.Path.CurrentOS as Path
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import qualified Data.Attoparsec.Text as PT
+import qualified Control.Foldl as Fold
 
 import Control.Conditional (unlessM)
-import Data.Hourglass.Types (Date(..))
 import Control.Applicative
+import Data.Time
+import Data.Time.Format
 import Data.Char (isSpace)
+import Data.Foldable (maximumBy)
+import Data.Function (on)
 
 import Turtle
 import Turtle.Format
@@ -22,15 +26,24 @@ data Options = Options { dest :: FilePath
                        } deriving Show
 
 data BackupList = BackupList { backupTag :: Text
-                             , backupTime :: Date
-                             }
+                             , backupTime :: UTCTime
+                             } deriving (Show, Eq)
 
-backupListParser :: PT.Parser (Text, Text)
+backupListParser :: PT.Parser BackupList
 backupListParser = do
   name <- PT.takeTill isSpace
-  PT.skipSpace
-  date <- PT.takeTill PT.isEndOfLine
-  return (name, date)
+  _ <- PT.skipSpace
+  _weekDay <- PT.skipWhile (not . isSpace)
+  dateStr <- PT.takeTill PT.isEndOfLine
+
+  -- "Oct  5 12:23:45 2015"
+  date <- case parseTimeM True defaultTimeLocale "%b %e %X %Y" (T.unpack dateStr) of
+    Just u -> return u
+    Nothing -> fail "Invalid date."
+
+  return BackupList { backupTag = name
+                    , backupTime = date
+                    }
 
 getAtticRepo :: Options -> FilePath
 getAtticRepo opts = dest opts </> fromText (name opts <> ".attic")
@@ -50,13 +63,21 @@ main = do
     void $ mount $ dest opts
 
   backupList <- obtainBackupList repo
-  echo "yo"
+  let lastBackup = findLastBackup <$> backupList
+  echo $ tshow lastBackup
 
 mount :: FilePath -> IO ExitCode
 mount path = let Right tpath = Path.toText path in proc "sudo" ["mount", tpath] empty
 
-obtainBackupList :: FilePath -> IO BackupList
-obtainBackupList = undefined
+obtainBackupList :: FilePath -> IO (Either String [BackupList])
+obtainBackupList repo = do
+  let Right trepo = Path.toText repo
+  output <- fold (inproc "attic" ["list", trepo] empty) Fold.list
+  return $ sequence $ PT.parseOnly backupListParser <$> output
+
+-- | O(n) finds the last backup
+findLastBackup :: [BackupList] -> BackupList
+findLastBackup = maximumBy (compare `on` backupTime)
 
 -- | Not really reliable way to check if something is possibly mounted.
 --   If the given path is a sub-path of a mounted item, it will return a

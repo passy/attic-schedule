@@ -21,5 +21,6 @@ executable attic-schedule
                      , text
                      , system-filepath
                      , cond
-                     , hourglass
+                     , time
+                     , foldl
                      , attoparsec
