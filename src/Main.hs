@@ -20,6 +20,8 @@ import Data.Function (on)
 import Turtle
 import Turtle.Format
 
+type ParsedBackups = Either String [BackupList]
+
 data Options = Options { dest :: FilePath
                        , src :: FilePath
                        , name :: Text
@@ -63,18 +65,24 @@ main = do
     void $ mount $ dest opts
 
   backupList <- obtainBackupList repo
-  let lastBackup = findLastBackup <$> backupList
-  let minimumDiff = -1 * 24 * 60 * 60 :: NominalDiffTime
-  yesterday <- addUTCTime minimumDiff <$> getCurrentTime
-  -- TODO: Check if the logic here is actually right. It might be an any that
-  -- I need here.
-  let shouldBackup = all (backupOlderThan yesterday) lastBackup
+  shouldBackup' <- shouldBackup backupList
 
-  if shouldBackup then do
+  if shouldBackup' then do
     echo "Last backup is older than 24h, let's do it!"
     view $ doBackup (src opts) repo
   else
     echo "Old backup isn't even a day old. I'll skip it for now."
+
+getYesterday :: IO UTCTime
+getYesterday = do
+  let minimumDiff = -1 * 24 * 60 * 60 :: NominalDiffTime
+  addUTCTime minimumDiff <$> getCurrentTime
+
+shouldBackup :: ParsedBackups -> IO Bool
+shouldBackup backupList = do
+  yesterday <- getYesterday
+  let lastBackup = findLastBackup <$> backupList
+  return $ all (backupOlderThan yesterday) lastBackup
 
 doBackup :: FilePath -> FilePath -> Shell ExitCode
 doBackup src repo = do
@@ -86,10 +94,10 @@ doBackup src repo = do
   let target = trepo <> "::" <> dayStr <> ":" <> hourStr
 
   echo $ format ("Creating new backup with target target"%s) target
-  proc "attic" ["create", target, tsrc, "-v", "--stats"] empty
+  proc "attic" ["create", target, tsrc, "--stats"] empty
 
 backupOlderThan :: UTCTime -> BackupList -> Bool
-backupOlderThan time backup = diffUTCTime time (backupTime backup) < 0
+backupOlderThan time backup = diffUTCTime time (backupTime backup) > 0
 
 mount :: FilePath -> IO ExitCode
 mount path = let Right tpath = Path.toText path in proc "sudo" ["mount", tpath] empty
