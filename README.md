@@ -20,6 +20,18 @@ whether or not the code is actually any good.
 stack install
 ```
 
+I also want to mount my NAS backup directory as user, so I add this here to
+`/etc/sudoers.d/override`:
+
+```
+Cmnd_Alias MOUNT_REMOTEBACKUP = /usr/bin/mount /mnt/remotebackup
+
+pascal ALL=(ALL) NOPASSWD: MOUNT_REMOTEBACKUP
+```
+
+If your name isn't `pascal`, you should a) blame your parents and b) change
+the line above.
+
 ## Usage
 
 This is meant to be used in combination with a crontab which runs every hour or
@@ -34,6 +46,20 @@ attic-schedule -- -d /mnt/remotebackup -s ~/Documents/ -n documents
 This will create a new tag with the name
 `/mnt/remotebackup/pascal-documents.attic::2015-11-01-21h` unless there's another
 backup created on the 11th of November 2015.
+
+### Crontab
+
+You will also want to make this part of your crontab unless you really enjoy
+typing long commands. (By the way, if you know how to do this with systemd
+timers, please let me know, I actually had to install cronie first.)
+
+```crontab
+0   *   *   *   *   ionice -n3 -- attic-schedule -d /mnt/remotebackup -s ~/Projects/ -n pascal-project
+5   *   *   *   *   ionice -n3 -- attic-schedule -d /mnt/remotebackup -s ~/Documents/ -n pascal-docs
+```
+
+(Don't forget the `ionice` even if it the network is most likely enough of a
+bottleneck to not impact your system's I/O perf.)
 
 ## License
 
