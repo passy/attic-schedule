@@ -39,7 +39,7 @@ backupListParser = do
   -- "Oct  5 12:23:45 2015"
   date <- case parseTimeM True defaultTimeLocale "%b %e %X %Y" (T.unpack dateStr) of
     Just u -> return u
-    Nothing -> fail "Invalid date."
+    Nothing -> fail $ "Invalid date: " ++ show dateStr
 
   return BackupList { backupTag = name
                     , backupTime = date
