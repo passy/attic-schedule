@@ -17,6 +17,7 @@ executable attic-schedule
   main-is:             Main.hs
   default-language:    Haskell2010
   Ghc-options:         -Wall
+                       -Werror
                        -fwarn-tabs
                        -fwarn-incomplete-record-updates
                        -fwarn-monomorphism-restriction
