@@ -2,32 +2,35 @@
 
 module Main where
 
-import Prelude hiding (FilePath)
+import qualified Control.Foldl             as Fold
+import qualified Data.Attoparsec.Text      as PT
+import qualified Data.Text                 as T
+import qualified Data.Text.IO              as TIO
+import           Data.Version              (showVersion)
 import qualified Filesystem.Path.CurrentOS as Path
-import qualified Data.Text as T
-import qualified Data.Text.IO as TIO
-import qualified Data.Attoparsec.Text as PT
-import qualified Control.Foldl as Fold
+import           Paths_attic_schedule      (version)
+import           Prelude                   hiding (FilePath)
 
-import Control.Conditional (unlessM)
-import Control.Applicative
-import Data.Time
-import Data.Time.Format
-import Data.Char (isSpace)
-import Data.Foldable (maximumBy)
-import Data.Function (on)
 
-import Turtle
-import Turtle.Format
+import           Control.Applicative
+import           Control.Conditional       (unlessM)
+import           Data.Char                 (isSpace)
+import           Data.Foldable             (maximumBy)
+import           Data.Function             (on)
+import           Data.Time
+import           Data.Time.Format
+
+import           Turtle
+import           Turtle.Format
 
 type ParsedBackups = Either String [BackupList]
 
 data Options = Options { dest :: FilePath
-                       , src :: FilePath
+                       , src  :: FilePath
                        , name :: Text
                        } deriving Show
 
-data BackupList = BackupList { backupTag :: Text
+data BackupList = BackupList { backupTag  :: Text
                              , backupTime :: UTCTime
                              } deriving (Show, Eq)
 
@@ -54,24 +57,6 @@ optionsParser :: Parser Options
 optionsParser = Options <$> optPath "dest" 'd' "Destination (has to equal mount point in my case)"
                         <*> optPath "src" 's' "Source directory"
                         <*> optText "name" 'n' "Base identifier name"
-
-main :: IO ()
-main = do
-  opts <- options "Attic Schedule" optionsParser
-  let repo = getAtticRepo opts
-
-  unlessM (isPathMounted $ dest opts) $ do
-    echo $ format ("Doesn't seem like "%s%" is mounted. Let me do that for you …") (tshow $ dest opts)
-    void $ mount $ dest opts
-
-  backupList <- obtainBackupList repo
-  shouldBackup' <- shouldBackup backupList
-
-  if shouldBackup' then do
-    echo "Last backup is older than 24h, let's do it!"
-    view $ doBackup (src opts) repo
-  else
-    echo "Old backup isn't even a day old. I'll skip it for now."
 
 getYesterday :: IO UTCTime
 getYesterday = do
@@ -123,3 +108,21 @@ isPathMounted path = do
 
 tshow :: Show s => s -> Text
 tshow = fromString . show
+
+main :: IO ()
+main = do
+  opts <- options "Attic Schedule" optionsParser
+  let repo = getAtticRepo opts
+
+  unlessM (isPathMounted $ dest opts) $ do
+    echo $ format ("Doesn't seem like "%s%" is mounted. Let me do that for you …") (tshow $ dest opts)
+    void $ mount $ dest opts
+
+  backupList <- obtainBackupList repo
+  shouldBackup' <- shouldBackup backupList
+
+  if shouldBackup' then do
+    echo "Last backup is older than 24h, let's do it!"
+    view $ doBackup (src opts) repo
+  else
+    echo "Old backup isn't even a day old. I'll skip it for now."
