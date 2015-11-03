@@ -1,6 +1,6 @@
 name:                attic-schedule
 version:             0.1.0.0
-synopsis:            Simple project template from stack
+synopsis:            A script I use to run "attic" for my backups.
 description:         Please see README.md
 homepage:            http://github.com/passy/attic-schedule#readme
 license:             BSD3
