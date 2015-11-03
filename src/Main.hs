@@ -6,22 +6,20 @@ import qualified Control.Foldl             as Fold
 import qualified Data.Attoparsec.Text      as PT
 import qualified Data.Text                 as T
 import qualified Data.Text.IO              as TIO
-import           Data.Version              (showVersion)
 import qualified Filesystem.Path.CurrentOS as Path
-import           Paths_attic_schedule      (version)
 import           Prelude                   hiding (FilePath)
 
 
-import           Control.Applicative
 import           Control.Conditional       (unlessM)
 import           Data.Char                 (isSpace)
 import           Data.Foldable             (maximumBy)
 import           Data.Function             (on)
-import           Data.Time
-import           Data.Time.Format
+import           Data.Time                 (TimeOfDay (..), UTCTime (..),
+                                            addUTCTime, defaultTimeLocale,
+                                            diffUTCTime, getCurrentTime,
+                                            parseTimeM, timeToTimeOfDay)
 
 import           Turtle
-import           Turtle.Format
 
 type ParsedBackups = Either String [BackupList]
 
@@ -36,18 +34,18 @@ data BackupList = BackupList { backupTag  :: Text
 
 backupListParser :: PT.Parser BackupList
 backupListParser = do
-  name <- PT.takeTill isSpace
+  name' <- PT.takeTill isSpace
   _ <- PT.skipSpace
   _weekDay <- PT.skipWhile (not . isSpace)
   dateStr <- PT.takeTill PT.isEndOfLine
 
   -- "Oct  5 12:23:45 2015"
-  date <- case parseTimeM True defaultTimeLocale "%b %e %X %Y" (T.unpack dateStr) of
-    Just u -> return u
+  date' <- case parseTimeM True defaultTimeLocale "%b %e %X %Y" (T.unpack dateStr) of
+    Just pd -> return pd
     Nothing -> fail $ "Invalid date: " ++ show dateStr
 
-  return BackupList { backupTag = name
-                    , backupTime = date
+  return BackupList { backupTag = name'
+                    , backupTime = date'
                     }
 
 getAtticRepo :: Options -> FilePath
@@ -70,10 +68,10 @@ shouldBackup backupList = do
   return $ all (backupOlderThan yesterday) lastBackup
 
 doBackup :: FilePath -> FilePath -> Shell ExitCode
-doBackup src repo = do
+doBackup src' repo = do
   now <- liftIO getCurrentTime
   let Right trepo = Path.toText repo
-  let Right tsrc = Path.toText src
+  let Right tsrc = Path.toText src'
   let dayStr = tshow . utctDay $ now
   let hourStr = tshow . todHour . timeToTimeOfDay . utctDayTime $ now
   let target = trepo <> "::" <> dayStr <> ":" <> hourStr
@@ -82,7 +80,7 @@ doBackup src repo = do
   proc "attic" ["create", target, tsrc, "--stats"] empty
 
 backupOlderThan :: UTCTime -> BackupList -> Bool
-backupOlderThan time backup = diffUTCTime time (backupTime backup) > 0
+backupOlderThan time' backup = diffUTCTime time' (backupTime backup) > 0
 
 mount :: FilePath -> IO ExitCode
 mount path = let Right tpath = Path.toText path in proc "sudo" ["mount", tpath] empty
@@ -90,8 +88,8 @@ mount path = let Right tpath = Path.toText path in proc "sudo" ["mount", tpath] 
 obtainBackupList :: FilePath -> IO (Either String [BackupList])
 obtainBackupList repo = do
   let Right trepo = Path.toText repo
-  output <- fold (inproc "attic" ["list", trepo] empty) Fold.list
-  return $ sequence $ PT.parseOnly backupListParser <$> output
+  output' <- fold (inproc "attic" ["list", trepo] empty) Fold.list
+  return $ sequence $ PT.parseOnly backupListParser <$> output'
 
 -- | O(n) finds the last backup
 findLastBackup :: [BackupList] -> BackupList
