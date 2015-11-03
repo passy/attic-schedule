@@ -6,10 +6,10 @@ cache:
   - $HOME/.stack/
 
 before_install:
-- mkdir -p ~/.local/bin
-- export PATH=~/.local/bin:$PATH
-- travis_retry curl -L https://github.com/commercialhaskell/stack/releases/download/v0.1.6.0/stack-0.1.6.0-linux-x86_64.tar.gz | gunzip > ~/.local/bin/stack
-- chmod a+x ~/.local/bin/stack
+- mkdir -p ~/.local/bin/stack
+- export PATH=~/.local/bin/stack:$PATH
+- travis_retry curl -L https://github.com/commercialhaskell/stack/releases/download/v0.1.6.0/stack-0.1.6.0-linux-x86_64.tar.gz | tar -xzf- -C ~/.local/bin/stack
+- chmod a+x ~/.local/bin/stack/stack
 
 install:
   - stack setup --no-terminal
