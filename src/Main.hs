@@ -116,7 +116,8 @@ main = do
 
   unlessM (isPathMounted $ dest opts) $ do
     echo $ format ("Doesn't seem like "%s%" is mounted. Let me do that for you …") (tshow $ dest opts)
-    void $ mount $ dest opts
+    ExitSuccess <- mount $ dest opts
+    return ()
 
   backupList <- obtainBackupList repo
   shouldBackup' <- shouldBackup backupList
