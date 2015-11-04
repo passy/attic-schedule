@@ -6,7 +6,6 @@ import qualified Control.Foldl             as Fold
 import qualified Data.Attoparsec.Text      as PT
 import qualified Data.Text                 as T
 import qualified Data.Text.IO              as TIO
-import qualified Filesystem.Path.CurrentOS as Path
 import           Prelude                   hiding (FilePath)
 
 
@@ -70,25 +69,22 @@ shouldBackup backupList = do
 doBackup :: FilePath -> FilePath -> Shell ExitCode
 doBackup src' repo = do
   now <- liftIO getCurrentTime
-  let Right trepo = Path.toText repo
-  let Right tsrc = Path.toText src'
   let dayStr = tshow . utctDay $ now
   let hourStr = tshow . todHour . timeToTimeOfDay . utctDayTime $ now
-  let target = trepo <> "::" <> dayStr <> ":" <> hourStr
+  let target = format (fp%"::"%s%":"%s) repo dayStr hourStr
 
-  echo $ format ("Creating new backup with target target"%s) target
-  proc "attic" ["create", target, tsrc, "--stats"] empty
+  echo $ "Creating new backup with target " <> target
+  proc "attic" ["create", target, format fp src', "--stats"] empty
 
 backupOlderThan :: UTCTime -> BackupList -> Bool
 backupOlderThan time' backup = diffUTCTime time' (backupTime backup) > 0
 
 mount :: FilePath -> IO ExitCode
-mount path = let Right tpath = Path.toText path in proc "sudo" ["mount", tpath] empty
+mount path = proc "sudo" ["mount", format fp path] empty
 
 obtainBackupList :: FilePath -> IO (Either String [BackupList])
 obtainBackupList repo = do
-  let Right trepo = Path.toText repo
-  output' <- fold (inproc "attic" ["list", trepo] empty) Fold.list
+  output' <- fold (inproc "attic" ["list", format fp repo] empty) Fold.list
   return $ sequence $ PT.parseOnly backupListParser <$> output'
 
 -- | O(n) finds the last backup
@@ -100,9 +96,8 @@ findLastBackup = maximumBy (compare `on` backupTime)
 --   false positive.
 isPathMounted :: FilePath -> IO Bool
 isPathMounted path = do
-  let Right tpath = Path.toText path
   mounts <- TIO.readFile "/proc/mounts"
-  return $ tpath `T.isInfixOf` mounts
+  return $ format fp path `T.isInfixOf` mounts
 
 tshow :: Show s => s -> Text
 tshow = fromString . show
