@@ -63,9 +63,9 @@ getYesterday = do
 
 shouldBackup :: ParsedBackups -> IO Bool
 shouldBackup backupList = do
-  yesterday <- getYesterday
-  let lastBackup = findLastBackup <$> backupList
-  return $ all (backupOlderThan yesterday) lastBackup
+  yesterday <- utctDay <$> getYesterday
+  let lastBackupDay = (utctDay . backupTime) <$> findLastBackup <$> backupList
+  return $ all (<= yesterday) lastBackupDay
 
 doBackup :: FilePath -> FilePath -> Shell ExitCode
 doBackup src' repo = do
