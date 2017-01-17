@@ -1,19 +1,20 @@
-language: haskell
-
 sudo: false
+language: c  # Choose a lightweight base image
+
 cache:
   directories:
-  - $HOME/.stack/
+  - $HOME/.stack
+
+addons:
+  apt:
+    packages:
+    - libgmp3-dev
 
 before_install:
-- mkdir -p ~/.local/bin/stack
-- export PATH=~/.local/bin/stack:$PATH
-- travis_retry curl -L https://github.com/commercialhaskell/stack/releases/download/v0.1.6.0/stack-0.1.6.0-linux-x86_64.tar.gz | tar -xzf- -C ~/.local/bin/stack --strip-components=1
-- chmod a+x ~/.local/bin/stack/stack
-
-install:
-  - stack setup --no-terminal
-  - stack build --no-terminal
+- mkdir -p ~/.local/bin
+- export PATH=$HOME/.local/bin:$PATH
+- travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
 
 script:
-  - stack build --no-terminal
+- stack setup
+- stack --no-terminal build
