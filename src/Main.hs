@@ -9,7 +9,7 @@ import qualified Data.Text.IO              as TIO
 import           Prelude                   hiding (FilePath)
 
 
-import           Control.Conditional       (unlessM)
+import           Control.Bool              (unlessM)
 import           Data.Char                 (isSpace)
 import           Data.Foldable             (maximumBy)
 import           Data.Function             (on)
