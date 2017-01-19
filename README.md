@@ -32,6 +32,12 @@ pascal ALL=(ALL) NOPASSWD: MOUNT_REMOTEBACKUP
 If your name isn't `pascal`, you should a) blame your parents and b) change
 the line above.
 
+I mount the above via SMB, so my `fstab` entry looks something like this:
+
+```
+//passystation0/backup  /mnt/remotebackup/      cifs    rw,vers=1.0,cache=strict,username=backup,password=hahanotgonnatellya,domain=WORKGROUP,addr=fdbf:11c6:f107::9e4,posixpaths,serverino,acl,rsize=1048576,wsize=1048576,actimeo=1,noauto,user
+```
+
 ## Usage
 
 This is meant to be used in combination with a crontab which runs every hour or
