@@ -1,4 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# OPTIONS_GHC -Wno-deprecations #-}
 
 module Main where
 
@@ -6,10 +8,11 @@ import qualified Control.Foldl             as Fold
 import qualified Data.Attoparsec.Text      as PT
 import qualified Data.Text                 as T
 import qualified Data.Text.IO              as TIO
-import           Prelude                   hiding (FilePath)
 
+import           Protolude          hiding ((%), FilePath, (<>), fold)
+import           Turtle
 
-import           Control.Bool              (unlessM)
+import           Data.String               (String)
 import           Data.Char                 (isSpace)
 import           Data.Foldable             (maximumBy)
 import           Data.Function             (on)
@@ -17,8 +20,6 @@ import           Data.Time                 (TimeOfDay (..), UTCTime (..),
                                             addUTCTime, defaultTimeLocale,
                                             diffUTCTime, getCurrentTime,
                                             parseTimeM, timeToTimeOfDay)
-
-import           Turtle
 
 type ParsedBackups = Either String [BackupList]
 
@@ -41,7 +42,7 @@ backupListParser = do
   -- "Oct  5 12:23:45 2015"
   date' <- case parseTimeM True defaultTimeLocale "%b %e %X %Y" (T.unpack dateStr) of
     Just pd -> return pd
-    Nothing -> fail $ "Invalid date: " ++ show dateStr
+    Nothing -> error $ "Invalid date: " <> dateStr
 
   return BackupList { backupTag = name'
                     , backupTime = date'
@@ -61,13 +62,15 @@ getYesterday = do
   addUTCTime minimumDiff <$> getCurrentTime
 
 -- | Based on the list of backups, decide whether or not to schedule a backup.
+--
+-- Don't barf on empty results.
 -- >>> shouldBackup $ Right []
 -- True
 shouldBackup :: ParsedBackups -> IO Bool
 shouldBackup backupList = do
   yesterday <- getYesterday
   let lastBackup = findLastBackup <$> backupList
-  return $ all (backupOlderThan yesterday) lastBackup
+  return $ all (maybe True $ backupOlderThan yesterday) lastBackup
 
 doBackup :: FilePath -> FilePath -> Shell ExitCode
 doBackup src' repo = do
@@ -91,8 +94,11 @@ obtainBackupList repo = do
   return $ sequence $ PT.parseOnly backupListParser <$> output'
 
 -- | O(n) finds the last backup
-findLastBackup :: [BackupList] -> BackupList
-findLastBackup = maximumBy (compare `on` backupTime)
+-- >>> findLastBackup []
+-- Nothing
+findLastBackup :: [BackupList] -> Maybe BackupList
+findLastBackup [] = Nothing
+findLastBackup l  = pure . maximumBy (compare `on` backupTime) $ l
 
 -- | Not really reliable way to check if something is possibly mounted.
 --   If the given path is a sub-path of a mounted item, it will return a
