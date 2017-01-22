@@ -60,6 +60,9 @@ getYesterday = do
   let minimumDiff = -1 * 24 * 60 * 60 :: NominalDiffTime
   addUTCTime minimumDiff <$> getCurrentTime
 
+-- | Based on the list of backups, decide whether or not to schedule a backup.
+-- >>> shouldBackup $ Right []
+-- True
 shouldBackup :: ParsedBackups -> IO Bool
 shouldBackup backupList = do
   yesterday <- getYesterday
