@@ -18,3 +18,4 @@ before_install:
 script:
 - stack setup
 - stack --no-terminal build
+- stack --no-terminal test
