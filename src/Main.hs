@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE LambdaCase #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
 
 module Main where
@@ -118,8 +119,9 @@ main = do
 
   unlessM (isPathMounted $ dest opts) $ do
     echo $ format ("Doesn't seem like "%s%" is mounted. Let me do that for you …") (tshow $ dest opts)
-    ExitSuccess <- mount $ dest opts
-    return ()
+    mount (dest opts) >>= \case
+      ExitSuccess -> return ()
+      ExitFailure _ -> error $ "Failed to mount " <> show (dest opts)
 
   backupList <- obtainBackupList repo
   shouldBackup' <- shouldBackup backupList
