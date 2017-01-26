@@ -76,9 +76,13 @@ shouldBackup backupList = do
 doBackup :: FilePath -> FilePath -> Shell ExitCode
 doBackup src' repo = do
   now <- liftIO getCurrentTime
-  let dayStr = tshow . utctDay $ now
-  let hourStr = tshow . todHour . timeToTimeOfDay . utctDayTime $ now
-  let target = format (fp%"::"%s%":"%s) repo dayStr hourStr
+
+  let dayStr :: Text
+      dayStr = show . utctDay $ now
+      hourStr :: Text
+      hourStr = show . todHour . timeToTimeOfDay . utctDayTime $ now
+      target :: Text
+      target = format (fp%"::"%s%":"%s) repo dayStr hourStr
 
   echo $ "Creating new backup with target " <> target
   proc "attic" ["create", target, format fp src', "--stats"] empty
@@ -109,16 +113,13 @@ isPathMounted path = do
   mounts <- TIO.readFile "/proc/mounts"
   return $ format fp path `T.isInfixOf` mounts
 
-tshow :: Show s => s -> Text
-tshow = fromString . show
-
 main :: IO ()
 main = do
   opts <- options "Attic Schedule" optionsParser
   let repo = getAtticRepo opts
 
   unlessM (isPathMounted $ dest opts) $ do
-    echo $ format ("Doesn't seem like "%s%" is mounted. Let me do that for you …") (tshow $ dest opts)
+    echo $ format ("Doesn't seem like "%s%" is mounted. Let me do that for you …") (show $ dest opts)
     mount (dest opts) >>= \case
       ExitSuccess -> return ()
       ExitFailure _ -> error $ "Failed to mount " <> show (dest opts)
