@@ -1,5 +1,5 @@
 name:                attic-schedule
-version:             0.1.0.0
+version:             0.2.0
 synopsis:            A script I use to run "attic" for my backups.
 description:         Please see README.md
 homepage:            http://github.com/passy/attic-schedule#readme
