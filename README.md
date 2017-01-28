@@ -3,13 +3,14 @@
 > A script I use to trigger [attic](https://attic-backup.org/) to backup my
 > stuff to my local NAS.
 
-A bash script I converted to Haskell/[Turtle](http://haddock.stackage.org/lts-3.11/turtle-1.2.2/Turtle.html)
+This is a bash script I converted to
+Haskell/[Turtle](http://haddock.stackage.org/lts-3.11/turtle-1.2.2/Turtle.html)
 so I can trust it to do what it should. It's supposed to work for my machine.
-Sadly, my machine isn't yours so this probably won't work for you without
-some larger modifications.
+Sadly, my machine isn't yours so this probably won't work for you without some
+large(-ish) modifications.
 
 Why would I publish it if it's useless to most people? Well, I kinda like having
-all my backup script backed up on GitHub and whenever I write scripts like
+all my backup scripts backed up on GitHub and whenever I write scripts like
 this and search for Turtle code snippets on GitHub, I wish more people
 would put there stuff there so you see some real-world examples of the APIs -
 whether or not the code is actually any good.
@@ -39,6 +40,14 @@ I mount the above via SMB, so my `fstab` entry looks something like this:
 ```
 
 ## Usage
+
+There's one initial setup step, you need to manually invoke with `attic`, which is
+creating your attic repository. For the example below, you'd have to invoke:
+
+```
+attic create /mnt/remotebackup/pascal-projects.attic --encryption=keyfile
+attic create /mnt/remotebackup/pascal-docs.attic --encryption=keyfile
+```
 
 This is meant to be used in combination with a crontab which runs every hour or
 or so. It mounts the partition via CIFS and if it doesn't find a backup that's
