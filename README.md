@@ -17,8 +17,16 @@ whether or not the code is actually any good.
 
 ## Installation
 
+From the checked out repository:
+
 ```bash
 stack install
+```
+
+From Hackage:
+
+```bash
+stack install attic-schedule
 ```
 
 I also want to mount my NAS backup directory as user, so I add this here to
