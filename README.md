@@ -1,4 +1,4 @@
-# attic-schedule [![Build Status](https://travis-ci.org/passy/attic-schedule.svg?branch=master)](https://travis-ci.org/passy/attic-schedule)
+# attic-schedule [![Build Status](https://travis-ci.org/passy/attic-schedule.svg?branch=master)](https://travis-ci.org/passy/attic-schedule) [![Hackage](https://img.shields.io/hackage/v/attic-schedule.svg)](http://hackage.haskell.org/package/attic-schedule)
 
 > A script I use to trigger [attic](https://attic-backup.org/) to backup my
 > stuff to my local NAS.
