@@ -84,7 +84,7 @@ doBackup src' repo = do
       target :: Text
       target = format (fp%"::"%s%":"%s) repo dayStr hourStr
 
-  echo $ "Creating new backup with target " <> target
+  printf ("Creating new backup with target "%s%"\n") target
   proc "attic" ["create", target, format fp src', "--stats"] empty
 
 backupOlderThan :: UTCTime -> BackupList -> Bool
@@ -96,7 +96,7 @@ mount path = proc "sudo" ["mount", format fp path] empty
 obtainBackupList :: FilePath -> IO (Either String [BackupList])
 obtainBackupList repo = do
   output' <- fold (inproc "attic" ["list", format fp repo] empty) Fold.list
-  return $ sequence $ PT.parseOnly backupListParser <$> output'
+  return $ sequence $ PT.parseOnly backupListParser . lineToText <$> output'
 
 -- | O(n) finds the last backup
 -- >>> findLastBackup []
@@ -119,7 +119,7 @@ main = do
   let repo = getAtticRepo opts
 
   unlessM (isPathMounted $ dest opts) $ do
-    echo $ format ("Doesn't seem like "%s%" is mounted. Let me do that for you …") (show $ dest opts)
+    printf ("Doesn't seem like "%s%" is mounted. Let me do that for you …\n") (show $ dest opts)
     mount (dest opts) >>= \case
       ExitSuccess -> return ()
       ExitFailure _ -> error $ "Failed to mount " <> show (dest opts)
